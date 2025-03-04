@@ -1,7 +1,5 @@
-def greet(name):
-    return f"Hello, {name}!"
+import torch
 
-if __name__ == "__main__":
-    user_name = input("Enter your name: ")
-    print(greet(user_name))
-    print("Goodbye!")
+# Check if CUDA (GPU) is available and set the device
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
