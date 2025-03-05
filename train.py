@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from functions import bag_of_words, tokenize, stem
-from model import NeuralNet
+from classmodel import NeuralNet
 
 filepaths = [
     r"C:\Users\teisr\.vscode\chatbot-romanian-laws\sources\cod_rutier.txt",
@@ -33,3 +33,7 @@ ignore_words = ["?", "!", ".", ","]
 all_words = [stem(word) for word in all_words if word not in ignore_words]
 all_words = sorted(set(all_words))
 tags = sorted(set(tags))
+
+print(len(xy), "data points")
+print(len(tags), "tags", tags)
+print(len(all_words), "unique stemmed words", all_words)
