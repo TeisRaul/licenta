@@ -37,3 +37,14 @@ tags = sorted(set(tags))
 print(len(xy), "data points")
 print(len(tags), "tags", tags)
 print(len(all_words), "unique stemmed words", all_words)
+
+X_train = []
+y_train = []
+for (sentence, tag) in xy:
+    bag = bag_of_words(sentence, all_words)
+    X_train.append(bag)
+    label = tags.index(tag)
+    y_train.append(tag)
+    
+X_train = np.array(X_train)
+y_train = np.array(y_train)
