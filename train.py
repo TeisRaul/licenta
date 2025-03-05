@@ -48,3 +48,11 @@ for (sentence, tag) in xy:
     
 X_train = np.array(X_train)
 y_train = np.array(y_train)
+
+num_epochs = 1000
+batch_size = 32
+learning_rate = 0.001
+input_size = len(X_train[0])
+hidden_size = 32
+output_size = len(tags)
+print(input_size, output_size)
