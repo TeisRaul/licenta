@@ -5,6 +5,7 @@ import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from functions import bag_of_words, tokenize, stem
 from classmodel import NeuralNet
+import time
 
 filepaths = [
     r"C:\Users\teisr\.vscode\chatbot-romanian-laws\sources\cod_rutier.txt",
@@ -92,9 +93,9 @@ for epoch in range(num_epochs):
         optimizer.step()
         
     if (epoch + 1) % 100 == 0:
-        print(f"Epoch {epoch+1}/{num_epochs}, Loss: {loss.item()}")
+        print(f"Epoch {epoch+1}/{num_epochs}, Loss: {loss.item()}, Time: {time.ctime()}")
     
-print(f"Final loss: {loss.item()}")
+print(f"Final loss: {loss.item()}, Time: {time.ctime()}")
 data = {
     "model_state": model.state_dict(),
     "input_size": input_size,
