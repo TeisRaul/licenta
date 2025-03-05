@@ -44,10 +44,11 @@ for (sentence, tag) in xy:
     bag = bag_of_words(sentence, all_words)
     X_train.append(bag)
     label = tags.index(tag)
-    y_train.append(tag)
+    y_train.append(label)
     
 X_train = np.array(X_train)
 y_train = np.array(y_train)
+y_train = torch.tensor(y_train, dtype=torch.long)
 
 num_epochs = 1000
 batch_size = 32
@@ -81,7 +82,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 for epoch in range(num_epochs):
     for (words, labels) in train_loader:
         words = words.to(device)
-        labels = labels.to(device)
+        labels = labels.to(device).long()
         
         outputs = model(words)
         loss = criterion(outputs, labels)
