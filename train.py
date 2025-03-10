@@ -51,11 +51,11 @@ X_train = np.array(X_train)
 y_train = np.array(y_train)
 y_train = torch.tensor(y_train, dtype=torch.long)
 
-num_epochs = 1000
-batch_size = 32
-learning_rate = 0.001
+num_epochs = 10000
+batch_size = 64
+learning_rate = 0.0001
 input_size = len(X_train[0])
-hidden_size = 32
+hidden_size = 64
 output_size = len(tags)
 print(input_size, output_size)
 
