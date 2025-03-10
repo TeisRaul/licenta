@@ -40,14 +40,17 @@ model.eval()
 bot_name = "LawyerAI"
 print("Let's chat! (type 'quit' to exit)")
 
-def find_relevant_content(content, tokenized_sentence):
+# Istoric conversație
+conversation_history = []
+
+def find_relevant_content(content, tokenized_sentence, history):
     lines = content.split("\n")
     relevant_lines = []
     article_pattern = r"Art\. \d+"
     law_pattern = r"Legea nr\. \d+/\d+"
-    ignore_words = ["spune", "mi", "care", "este", "in", "despre", "ce"]
+    ignore_words = ["spune", "mi", "care", "este", "in", "despre", "ce", "si"]
     key_words = [word.lower() for word in tokenized_sentence if word.lower() not in ignore_words]
-   
+    
     article_request = any("articolul" in token.lower() for token in tokenized_sentence)
     if article_request:
         requested_article = None
@@ -61,6 +64,13 @@ def find_relevant_content(content, tokenized_sentence):
                     context = lines[i:i+4]
                     return context
 
+    history_context = " ".join([entry['input'] + " " + entry['response'] for entry in history]).lower()
+    if "mai mult" in " ".join(tokenized_sentence).lower() and history:
+        last_input = history[-1]['input'].lower()
+        last_response = history[-1]['response'].lower()
+        key_words.extend(tokenize(last_input))  
+
+
     for i, line in enumerate(lines):
         article_match = re.search(article_pattern, line)
         law_match = re.search(law_pattern, line)
@@ -71,9 +81,11 @@ def find_relevant_content(content, tokenized_sentence):
             
     sentence_str = " ".join(key_words)
     for i, line in enumerate(lines):
-        if sentence_str in line.lower():
-            return lines[i:i+2]
-        elif all(word in line.lower() for word in key_words):
+        line_lower = line.lower()
+        if sentence_str in line_lower or (history_context and any(word in line_lower for word in key_words)):
+            context = lines[i:i+4]  
+            return context
+        elif all(word in line_lower for word in key_words):
             relevant_lines.append(line.strip())
     
     return relevant_lines if relevant_lines else []
@@ -96,21 +108,28 @@ while True:
     prob = probs[0][predicted.item()]
 
     selected_content = all_content[tag]
-    relevant_lines = find_relevant_content(selected_content, tokenized_sentence)
+    relevant_lines = find_relevant_content(selected_content, tokenized_sentence, conversation_history)
     
     if relevant_lines:
         response = "\n".join(relevant_lines[:4])
         print(f"{bot_name}: {response}")
     elif prob.item() > 0.3:
         file_name = os.path.basename(filepaths[tag])
-        print(f"{bot_name}: Am găsit informații în {file_name}, dar nu am detalii specifice despre '{sentence}'.")
+        response = f"Am găsit informații în {file_name}, dar nu am detalii specifice despre '{sentence}'."
+        print(f"{bot_name}: {response}")
     else:
         for content, filepath in zip(all_content, filepaths):
-            relevant_lines = find_relevant_content(content, tokenized_sentence)
+            relevant_lines = find_relevant_content(content, tokenized_sentence, conversation_history)
             if relevant_lines:
                 response = "\n".join(relevant_lines[:4])
                 file_name = os.path.basename(filepath)
                 print(f"{bot_name}: {response} (din {file_name})")
                 break
         else:
-            print(f"{bot_name}: Nu înțeleg...")
+            response = "Nu înțeleg..."
+            print(f"{bot_name}: {response}")
+
+    conversation_history.append({
+        'input': sentence,
+        'response': response
+    })
