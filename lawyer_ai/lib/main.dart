@@ -149,7 +149,7 @@ class _ChatPageState extends State<ChatPage> {
       setState(() {
         _messages.add({'sender': 'You', 'text': _messageController.text});
         //String response = _generateResponse(_messageController.text);
-        _messages.add({'sender': 'LawyerAI', 'text': response});
+        //_messages.add({'sender': 'LawyerAI', 'text': response});
         _messageController.clear();
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
