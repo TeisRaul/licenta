@@ -59,10 +59,28 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _emailController = TextEditingController();
   bool _isPasswordVisible = false;
 
   void _login() {
     String username = _usernameController.text;
+    String password = _passwordController.text;
+    if (username.isNotEmpty && password.isNotEmpty) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const ChatPage(title: 'LawyerAI')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Introduceți utilizatorul și parola')),
+      );
+    }
+  }
+
+  // ignore: non_constant_identifier_names
+  void _sign_up() {
+    String username = _usernameController.text;
+    String email = _emailController.text;
     String password = _passwordController.text;
     if (username.isNotEmpty && password.isNotEmpty) {
       Navigator.pushReplacement(
@@ -118,8 +136,13 @@ class _LoginPageState extends State<LoginPage> {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _login,
-              child: const Text('Login'),
+              child: const Text('Autentificare'),
             ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _sign_up,
+              child: const Text('Inregistrare'),
+            )
           ],
         ),
       ),
@@ -127,7 +150,6 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-// Pagina de chat
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key, required this.title});
 
