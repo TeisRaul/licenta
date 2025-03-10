@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 void main() {
   runApp(const MyApp());
@@ -59,39 +61,41 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _emailController = TextEditingController();
   bool _isPasswordVisible = false;
 
-  void _login() {
+  Future<void> _login() async {
     String username = _usernameController.text;
     String password = _passwordController.text;
-    if (username.isNotEmpty && password.isNotEmpty) {
+    if (username.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Introduceți utilizatorul și parola')),
+      );
+      return;
+    }
+
+    final response = await http.post(
+      Uri.parse('http://localhost/licenta/login.php'),
+      body: {'username': username, 'password': password},
+    );
+
+    final data = jsonDecode(response.body);
+    if (data['success']) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const ChatPage(title: 'LawyerAI')),
+        MaterialPageRoute(builder: (context) => ChatPage(title: 'LawyerAI', username: username)),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Introduceți utilizatorul și parola')),
+        SnackBar(content: Text(data['message'])),
       );
     }
   }
 
-  // ignore: non_constant_identifier_names
-  void _sign_up() {
-    String username = _usernameController.text;
-    String email = _emailController.text;
-    String password = _passwordController.text;
-    if (username.isNotEmpty && password.isNotEmpty) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const ChatPage(title: 'LawyerAI')),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Introduceți utilizatorul și parola')),
-      );
-    }
+  void _goToSignUp() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const SignUpPage()),
+    );
   }
 
   @override
@@ -138,11 +142,11 @@ class _LoginPageState extends State<LoginPage> {
               onPressed: _login,
               child: const Text('Autentificare'),
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _sign_up,
-              child: const Text('Inregistrare'),
-            )
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: _goToSignUp,
+              child: const Text('Nu ai cont? Înregistrează-te', style: TextStyle(color: Colors.white)),
+            ),
           ],
         ),
       ),
@@ -150,10 +154,116 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
+// Pagina de înregistrare
+class SignUpPage extends StatefulWidget {
+  const SignUpPage({super.key});
+
+  @override
+  State<SignUpPage> createState() => _SignUpPageState();
+}
+
+class _SignUpPageState extends State<SignUpPage> {
+  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isPasswordVisible = false;
+
+  Future<void> _signUp() async {
+    String username = _usernameController.text;
+    String email = _emailController.text;
+    String password = _passwordController.text;
+    if (username.isEmpty || email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Completează toate câmpurile')),
+      );
+      return;
+    }
+
+    final response = await http.post(
+      Uri.parse('http://localhost/licenta/signup.php'),
+      body: {'username': username, 'email': email, 'password': password},
+    );
+
+    final data = jsonDecode(response.body);
+    if (data['success']) {
+      Navigator.pop(context); // Înapoi la login după înregistrare
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cont creat cu succes! Te poți autentifica.')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(data['message'])),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('LawyerAI - Creează Cont'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextField(
+              controller: _usernameController,
+              decoration: const InputDecoration(
+                labelText: 'Utilizator',
+                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.white10,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _emailController,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.white10,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _passwordController,
+              obscureText: !_isPasswordVisible,
+              decoration: InputDecoration(
+                labelText: 'Parola',
+                border: const OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.white10,
+                suffixIcon: IconButton(
+                  icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
+                  onPressed: () {
+                    setState(() {
+                      _isPasswordVisible = !_isPasswordVisible;
+                    });
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _signUp,
+              child: const Text('Înregistrare'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Pagina de chat
 class ChatPage extends StatefulWidget {
-  const ChatPage({super.key, required this.title});
+  const ChatPage({super.key, required this.title, required this.username});
 
   final String title;
+  final String username;
 
   @override
   State<ChatPage> createState() => _ChatPageState();
@@ -170,8 +280,6 @@ class _ChatPageState extends State<ChatPage> {
     if (_messageController.text.isNotEmpty) {
       setState(() {
         _messages.add({'sender': 'You', 'text': _messageController.text});
-        //String response = _generateResponse(_messageController.text);
-        //_messages.add({'sender': 'LawyerAI', 'text': response});
         _messageController.clear();
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -191,6 +299,7 @@ class _ChatPageState extends State<ChatPage> {
     final myAppState = context.findAncestorStateOfType<_MyAppState>();
     myAppState?._changeThemeColor(_themeColors[_currentColorIndex]);
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
