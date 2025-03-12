@@ -1,50 +1,32 @@
-// ignore_for_file: non_constant_identifier_names
+// ignore_for_file: depend_on_referenced_packages
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:mysql1/mysql1.dart' show ConnectionSettings, MySqlConnection;
 
 void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  Color _themeColor = Colors.black;
-
-  void _changeThemeColor(Color newColor) {
-    setState(() {
-      _themeColor = newColor;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'LawyerAI',
       theme: ThemeData.dark().copyWith(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: _themeColor,
-          brightness: Brightness.dark,
-        ),
         scaffoldBackgroundColor: Colors.grey[900],
         appBarTheme: AppBarTheme(
-          backgroundColor: _themeColor,
+          backgroundColor: Colors.black87,
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: _themeColor,
+            backgroundColor: Colors.black87,
             foregroundColor: Colors.white,
           ),
         ),
         floatingActionButtonTheme: FloatingActionButtonThemeData(
-          backgroundColor: _themeColor,
+          backgroundColor: Colors.black87,
         ),
       ),
       home: const LoginPage(),
@@ -65,9 +47,11 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
 
+  // Conectarea la baza de date MySQL pentru autentificare
   Future<void> _login() async {
     String username = _usernameController.text;
     String password = _passwordController.text;
+
     if (username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Introduceți utilizatorul și parola')),
@@ -75,20 +59,39 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    final response = await http.post(
-      Uri.parse('http://localhost/licenta/login.php'),
-      body: {'username': username, 'password': password},
-    );
-
-    final data = jsonDecode(response.body);
-    if (data['success']) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => ChatPage(title: 'LawyerAI', username: username)),
+    try {
+      var settings = ConnectionSettings(
+        host: 'localhost',
+        port: 3306,
+        user: 'root', 
+        password: 'Titi300903!', 
+        db: 'lawyerAI_users', 
       );
-    } else {
+
+      var conn = await MySqlConnection.connect(settings);
+
+      var results = await conn.query(
+        'SELECT * FROM users WHERE username = ? AND password = ?',
+        [username, password],
+      );
+
+      if (results.isNotEmpty) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatPage(username: username, title: '',),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Autentificare eșuată!')),
+        );
+      }
+
+      await conn.close();
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(data['message'])),
+        SnackBar(content: Text('Eroare de conectare la baza de date: $e')),
       );
     }
   }
@@ -166,41 +169,60 @@ class SignUpPage extends StatefulWidget {
 
 class _SignUpPageState extends State<SignUpPage> {
   final _usernameController = TextEditingController();
-  final _first_nameController = TextEditingController();
-  final _last_nameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirm_passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _isPasswordVisible = false;
 
   Future<void> _signUp() async {
     String username = _usernameController.text;
-    String first_name = _first_nameController.text;
-    String last_name = _last_nameController.text; 
+    String firstName = _firstNameController.text;
+    String lastName = _lastNameController.text;
     String email = _emailController.text;
     String password = _passwordController.text;
-    String confirm_password = _confirm_passwordController.text;
-    if (username.isEmpty || first_name.isEmpty || last_name.isEmpty ||email.isEmpty || password.isEmpty || confirm_password.isEmpty) {
+    String confirmPassword = _confirmPasswordController.text;
+
+    if (username.isEmpty || firstName.isEmpty || lastName.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Completează toate câmpurile')),
       );
       return;
     }
 
-    final response = await http.post(
-      Uri.parse('http://localhost/licenta/signup.php'),
-      body: {'username': username, 'email': email, 'password': password},
-    );
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Parolele nu se potrivesc')),
+      );
+      return;
+    }
 
-    final data = jsonDecode(response.body);
-    if (data['success']) {
-      Navigator.pop(context); 
+    try {
+      var settings = ConnectionSettings(
+        host: 'localhost',
+        port: 3306,
+        user: 'root',
+        password: 'Titi300903!',
+        db: 'lawyerAI_users',
+      );
+
+      var conn = await MySqlConnection.connect(settings);
+
+      await conn.query(
+        'INSERT INTO users (username, first_name, last_name, email, password, confirm_password) VALUES (?, ?, ?, ?, ?, ?)',
+        [username, firstName, lastName, email, password, confirmPassword],
+      );
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Cont creat cu succes! Te poți autentifica.')),
       );
-    } else {
+
+      await conn.close();
+      Navigator.pop(context);
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(data['message'])),
+        SnackBar(content: Text('Eroare la crearea contului: $e')),
       );
     }
   }
@@ -217,7 +239,7 @@ class _SignUpPageState extends State<SignUpPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             TextField(
-              controller: _first_nameController,
+              controller: _firstNameController,
               decoration: const InputDecoration(
                 labelText: 'Prenume',
                 border: OutlineInputBorder(),
@@ -227,7 +249,7 @@ class _SignUpPageState extends State<SignUpPage> {
             ),
             const SizedBox(height: 16),
             TextField(
-              controller: _last_nameController,
+              controller: _lastNameController,
               decoration: const InputDecoration(
                 labelText: 'Nume',
                 border: OutlineInputBorder(),
@@ -276,7 +298,7 @@ class _SignUpPageState extends State<SignUpPage> {
             ),
             const SizedBox(height: 20),
             TextField(
-              controller: _confirm_passwordController,
+              controller: _confirmPasswordController,
               obscureText: !_isPasswordVisible,
               decoration: InputDecoration(
                 labelText: 'Confirmă Parola',
@@ -296,7 +318,7 @@ class _SignUpPageState extends State<SignUpPage> {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _signUp,
-              child: const Text('Înregistrare'),
+              child: const Text('Înregistrează-te'),
             ),
           ],
         ),
@@ -343,8 +365,8 @@ class _ChatPageState extends State<ChatPage> {
     setState(() {
       _currentColorIndex = (_currentColorIndex + 1) % _themeColors.length;
     });
-    final myAppState = context.findAncestorStateOfType<_MyAppState>();
-    myAppState?._changeThemeColor(_themeColors[_currentColorIndex]);
+    final myAppState = context.findAncestorStateOfType<_ChatPageState>();
+    myAppState?._changeThemeColor();
   }
 
   @override
