@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:mysql1/mysql1.dart' show ConnectionSettings, MySqlConnection;
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 void main() {
   runApp(const MyApp());
@@ -345,19 +347,69 @@ class _ChatPageState extends State<ChatPage> {
   final List<Color> _themeColors = [Colors.black, Colors.blueGrey, Colors.deepPurple];
   int _currentColorIndex = 0;
 
+  // Metodă pentru a obține predicția de la server
+  Future<void> _getPrediction(String message) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:1234/predict'), // Adresa serverului Flask
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'message': message}),
+      );
+
+      if (response.statusCode == 200) {
+        var result = jsonDecode(response.body);
+        int predictedTag = result['predicted_tag'];
+        String aiResponse;
+
+        // Definește răspunsuri bazate pe clasa prezisă
+        switch (predictedTag) {
+          case 0:
+            aiResponse = "Aceasta pare a fi o întrebare generală. Vă pot ajuta cu mai multe detalii?";
+            break;
+          case 1:
+            aiResponse = "Aceasta pare a fi o încălcare a legii. Vă recomand să consultați un avocat.";
+            break;
+          case 2:
+            aiResponse = "Aceasta este o cerere de clarificare juridică. Vă pot oferi informații generale.";
+            break;
+          default:
+            aiResponse = "Nu am înțeles cererea. Vă rog să reformulați.";
+        }
+
+        setState(() {
+          _messages.add({'sender': 'AI', 'text': aiResponse});
+        });
+      } else {
+        setState(() {
+          _messages.add({'sender': 'AI', 'text': 'Eroare la conectarea cu serverul.'});
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _messages.add({'sender': 'AI', 'text': 'Eroare: $e'});
+      });
+    }
+
+    // Derulează la ultimul mesaj
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
   void _sendMessage() {
     if (_messageController.text.isNotEmpty) {
       setState(() {
         _messages.add({'sender': 'You', 'text': _messageController.text});
-        _messageController.clear();
       });
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      });
+
+      // Trimite mesajul către server pentru predicție
+      _getPrediction(_messageController.text);
+
+      _messageController.clear();
     }
   }
 
@@ -365,15 +417,14 @@ class _ChatPageState extends State<ChatPage> {
     setState(() {
       _currentColorIndex = (_currentColorIndex + 1) % _themeColors.length;
     });
-    final myAppState = context.findAncestorStateOfType<_ChatPageState>();
-    myAppState?._changeThemeColor();
+    // Nu mai este necesară apelarea către _ChatPageState, deoarece setState actualizează UI-ul
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(widget.title.isEmpty ? 'LawyerAI Chat' : widget.title),
         actions: [
           IconButton(
             icon: const Icon(Icons.color_lens),
