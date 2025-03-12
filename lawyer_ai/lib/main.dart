@@ -1,3 +1,5 @@
+// ignore_for_file: non_constant_identifier_names
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -164,15 +166,21 @@ class SignUpPage extends StatefulWidget {
 
 class _SignUpPageState extends State<SignUpPage> {
   final _usernameController = TextEditingController();
+  final _first_nameController = TextEditingController();
+  final _last_nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirm_passwordController = TextEditingController();
   bool _isPasswordVisible = false;
 
   Future<void> _signUp() async {
     String username = _usernameController.text;
+    String first_name = _first_nameController.text;
+    String last_name = _last_nameController.text; 
     String email = _emailController.text;
     String password = _passwordController.text;
-    if (username.isEmpty || email.isEmpty || password.isEmpty) {
+    String confirm_password = _confirm_passwordController.text;
+    if (username.isEmpty || first_name.isEmpty || last_name.isEmpty ||email.isEmpty || password.isEmpty || confirm_password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Completează toate câmpurile')),
       );
@@ -186,7 +194,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
     final data = jsonDecode(response.body);
     if (data['success']) {
-      Navigator.pop(context); // Înapoi la login după înregistrare
+      Navigator.pop(context); 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Cont creat cu succes! Te poți autentifica.')),
       );
