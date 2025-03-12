@@ -71,4 +71,4 @@ def predict():
     return jsonify({'predicted_tag': predicted_tag})
 
 if __name__ == '__main__':
-    app.run(host='localhost', port=1234)
+    app.run(host='192.168.0.115', port=5342)

@@ -351,7 +351,7 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _getPrediction(String message) async {
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:1234/predict'), // Adresa serverului Flask
+        Uri.parse('http://192.168.0.115:5342/predict'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'message': message}),
       );
@@ -360,22 +360,7 @@ class _ChatPageState extends State<ChatPage> {
         var result = jsonDecode(response.body);
         int predictedTag = result['predicted_tag'];
         String aiResponse;
-
-        // Definește răspunsuri bazate pe clasa prezisă
-        switch (predictedTag) {
-          case 0:
-            aiResponse = "Aceasta pare a fi o întrebare generală. Vă pot ajuta cu mai multe detalii?";
-            break;
-          case 1:
-            aiResponse = "Aceasta pare a fi o încălcare a legii. Vă recomand să consultați un avocat.";
-            break;
-          case 2:
-            aiResponse = "Aceasta este o cerere de clarificare juridică. Vă pot oferi informații generale.";
-            break;
-          default:
-            aiResponse = "Nu am înțeles cererea. Vă rog să reformulați.";
-        }
-
+        
         setState(() {
           _messages.add({'sender': 'AI', 'text': aiResponse});
         });
@@ -390,7 +375,6 @@ class _ChatPageState extends State<ChatPage> {
       });
     }
 
-    // Derulează la ultimul mesaj
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,
@@ -417,7 +401,6 @@ class _ChatPageState extends State<ChatPage> {
     setState(() {
       _currentColorIndex = (_currentColorIndex + 1) % _themeColors.length;
     });
-    // Nu mai este necesară apelarea către _ChatPageState, deoarece setState actualizează UI-ul
   }
 
   @override
