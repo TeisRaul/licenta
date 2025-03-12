@@ -217,6 +217,26 @@ class _SignUpPageState extends State<SignUpPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             TextField(
+              controller: _first_nameController,
+              decoration: const InputDecoration(
+                labelText: 'Prenume',
+                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.white10,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _last_nameController,
+              decoration: const InputDecoration(
+                labelText: 'Nume',
+                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.white10,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
               controller: _usernameController,
               decoration: const InputDecoration(
                 labelText: 'Utilizator',
@@ -241,6 +261,25 @@ class _SignUpPageState extends State<SignUpPage> {
               obscureText: !_isPasswordVisible,
               decoration: InputDecoration(
                 labelText: 'Parola',
+                border: const OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.white10,
+                suffixIcon: IconButton(
+                  icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
+                  onPressed: () {
+                    setState(() {
+                      _isPasswordVisible = !_isPasswordVisible;
+                    });
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _confirm_passwordController,
+              obscureText: !_isPasswordVisible,
+              decoration: InputDecoration(
+                labelText: 'Confirmă Parola',
                 border: const OutlineInputBorder(),
                 filled: true,
                 fillColor: Colors.white10,
