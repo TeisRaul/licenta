@@ -50,38 +50,42 @@ class _LoginPageState extends State<LoginPage> {
   bool _isPasswordVisible = false;
 
   // Conectarea la baza de date MySQL pentru autentificare
-  Future<void> _login() async {
-    String username = _usernameController.text;
-    String password = _passwordController.text;
+Future<void> _login() async {
+  String username = _usernameController.text;
+  String password = _passwordController.text;
 
-    if (username.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Introduceți utilizatorul și parola')),
-      );
-      return;
-    }
+  if (username.isEmpty || password.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Introduceți utilizatorul și parola')),
+    );
+    return;
+  }
 
-    try {
-      var settings = ConnectionSettings(
-        host: 'localhost',
-        port: 3306,
-        user: 'root', 
-        password: 'Titi300903!', 
-        db: 'lawyerAI_users', 
-      );
+  try {
+    var settings = ConnectionSettings(
+      host: 'localhost',
+      port: 3306,
+      user: 'root',
+      password: 'Titi300903!',
+      db: 'lawyerAI_users',
+    );
 
-      var conn = await MySqlConnection.connect(settings);
+    var conn = await MySqlConnection.connect(settings);
+    var results = await conn.query(
+      'SELECT * FROM users WHERE username = ? AND password = ?',
+      [username, password],
+    );
 
-      var results = await conn.query(
-        'SELECT * FROM users WHERE username = ? AND password = ?',
-        [username, password],
-      );
-
-      if (results.isNotEmpty) {
+    if (results.isNotEmpty) {
+      // Convertește valorile la String pentru siguranță
+      var userData = results.first;
+      String dbUsername = userData['username'].toString();
+      String dbPassword = userData['password'].toString();
+      if (dbUsername == username && dbPassword == password) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => ChatPage(username: username, title: '',),
+            builder: (context) => ChatPage(username: username, title: ''),
           ),
         );
       } else {
@@ -89,14 +93,18 @@ class _LoginPageState extends State<LoginPage> {
           const SnackBar(content: Text('Autentificare eșuată!')),
         );
       }
-
-      await conn.close();
-    } catch (e) {
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Eroare de conectare la baza de date: $e')),
+        const SnackBar(content: Text('Autentificare eșuată!')),
       );
     }
+    await conn.close();
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Eroare de conectare la baza de date: ${e.toString()}')),
+    );
   }
+}
 
   void _goToSignUp() {
     Navigator.push(
@@ -348,42 +356,43 @@ class _ChatPageState extends State<ChatPage> {
   int _currentColorIndex = 0;
 
   // Metodă pentru a obține predicția de la server
-  Future<void> _getPrediction(String message) async {
-    try {
-      final response = await http.post(
-        Uri.parse('http://192.168.0.115:5342/predict'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'message': message}),
-      );
+Future<void> _getPrediction(String message) async {
+  try {
+    final response = await http.post(
+      Uri.parse('http://192.168.0.115:5342/predict'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'message': message}),
+    );
 
-      if (response.statusCode == 200) {
-        var result = jsonDecode(response.body);
-        int predictedTag = result['predicted_tag'];
-        String aiResponse;
-        
-        setState(() {
-          _messages.add({'sender': 'AI', 'text': aiResponse});
-        });
-      } else {
-        setState(() {
-          _messages.add({'sender': 'AI', 'text': 'Eroare la conectarea cu serverul.'});
-        });
-      }
-    } catch (e) {
+    print('Status code: ${response.statusCode}'); // Log pentru depanare
+    print('Response body: ${response.body}');     // Log pentru a vedea răspunsul
+
+    if (response.statusCode == 200) {
+      var result = jsonDecode(response.body);
+      String aiResponse = result['predicted_tag']?.toString() ?? 'Răspuns nedefinit de la server';
       setState(() {
-        _messages.add({'sender': 'AI', 'text': 'Eroare: $e'});
+        _messages.add({'sender': 'AI', 'text': aiResponse});
+      });
+    } else {
+      setState(() {
+        _messages.add({'sender': 'AI', 'text': 'Eroare la conectarea cu serverul. Status: ${response.statusCode}, Body: ${response.body}'});
       });
     }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
+  } catch (e) {
+    print('Eroare capturată: $e'); // Log pentru erori
+    setState(() {
+      _messages.add({'sender': 'AI', 'text': 'Eroare: ${e.toString()}'});
     });
   }
 
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    _scrollController.animateTo(
+      _scrollController.position.maxScrollExtent,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  });
+}
   void _sendMessage() {
     if (_messageController.text.isNotEmpty) {
       setState(() {
